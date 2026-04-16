@@ -4,101 +4,147 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>BondStats | Euro Yield Monitor</title>
+<title>BondStats | Euro Yield Intelligence</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family:Inter,sans-serif;
-  background:#07121f;
-  color:#eef4fb;
+
+/* ================= BASE ================= */
+
+body{
+margin:0;
+font-family:Inter,system-ui;
+background:linear-gradient(180deg,#050d16,#0a1a2b);
+color:#eef4fb;
 }
 
-/* CONTAINER (EMBED READY) */
-.wrap {
-  max-width:900px;
-  margin:auto;
-  padding:25px;
+/* ================= LAYOUT ================= */
+
+.wrap{
+max-width:980px;
+margin:auto;
+padding:30px 20px;
 }
 
-/* HEADER */
-.title {
-  font-size:26px;
-  font-weight:600;
+/* ================= HEADER ================= */
+
+.header{
+margin-bottom:20px;
 }
 
-.subtitle {
-  color:#8fa6c0;
-  font-size:14px;
-  margin-top:4px;
+.title{
+font-size:28px;
+font-weight:600;
+letter-spacing:0.3px;
 }
 
-/* METRICS */
-.metrics {
-  display:flex;
-  gap:20px;
-  margin-top:20px;
+.subtitle{
+font-size:13px;
+color:#8fa6c0;
+margin-top:4px;
 }
 
-.metric {
-  flex:1;
-  background:#0f2238;
-  padding:15px;
-  border-radius:12px;
+/* ================= METRICS ================= */
+
+.metrics{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:12px;
+margin-top:20px;
 }
 
-.metric-label {
-  font-size:12px;
-  color:#8fa6c0;
+.metric{
+background:rgba(15,30,50,0.85);
+border:1px solid rgba(255,255,255,0.06);
+border-radius:12px;
+padding:14px;
 }
 
-.metric-value {
-  font-size:22px;
-  font-weight:600;
+.metric-label{
+font-size:11px;
+color:#8fa6c0;
+text-transform:uppercase;
 }
 
-/* BUTTONS */
-.controls {
-  margin-top:20px;
+.metric-value{
+font-size:20px;
+margin-top:6px;
+font-weight:600;
 }
 
-.btn {
-  border:1px solid rgba(255,255,255,0.1);
-  background:none;
-  color:#8fa6c0;
-  padding:6px 12px;
-  margin-right:6px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:12px;
+.metric-change{
+font-size:12px;
+margin-top:4px;
 }
 
-.btn.active {
-  border-color:#5be37d;
-  color:#fff;
+.pos{color:#5be37d;}
+.neg{color:#ff6b6b;}
+
+/* ================= CONTROLS ================= */
+
+.controls{
+margin-top:20px;
+display:flex;
+gap:8px;
 }
 
-/* CHART */
-.chart-box {
-  margin-top:15px;
-  background:#0f2238;
-  padding:15px;
-  border-radius:12px;
+.btn{
+border:1px solid rgba(255,255,255,0.08);
+background:none;
+color:#8fa6c0;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+font-size:12px;
 }
 
-canvas {
-  height:220px !important;
+.btn.active{
+border-color:#5be37d;
+color:#fff;
 }
 
-/* ANALYSIS */
-.analysis {
-  margin-top:20px;
-  font-size:13px;
-  color:#c6d4e5;
-  line-height:1.5;
+/* ================= CHART ================= */
+
+.chart-container{
+margin-top:15px;
+background:rgba(15,30,50,0.9);
+border-radius:14px;
+padding:16px;
+border:1px solid rgba(255,255,255,0.06);
 }
+
+canvas{
+height:240px !important;
+}
+
+/* ================= ANALYSIS ================= */
+
+.analysis{
+margin-top:20px;
+background:rgba(255,255,255,0.03);
+padding:16px;
+border-radius:12px;
+font-size:13px;
+line-height:1.6;
+color:#c7d5e6;
+}
+
+.section-title{
+font-size:12px;
+text-transform:uppercase;
+color:#8fa6c0;
+margin-bottom:8px;
+}
+
+/* ================= FOOTER ================= */
+
+.footer{
+margin-top:15px;
+font-size:11px;
+color:#6f859f;
+}
+
 </style>
 </head>
 
@@ -106,34 +152,45 @@ canvas {
 
 <div class="wrap">
 
-<div class="title">Euro 10Y Yield Monitor</div>
-<div class="subtitle">Daily sovereign yield tracking (ECB data)</div>
+<div class="header">
+<div class="title">Euro 10Y Yield Intelligence</div>
+<div class="subtitle">Daily sovereign yield monitoring powered by ECB data</div>
+</div>
 
 <div class="metrics" id="metrics"></div>
 
 <div class="controls">
-  <button class="btn active" onclick="setRange(7)">1W</button>
-  <button class="btn" onclick="setRange(30)">1M</button>
-  <button class="btn" onclick="setRange(90)">3M</button>
-  <button class="btn" onclick="setRange(365)">1Y</button>
+<button class="btn active" onclick="setRange(7)">1W</button>
+<button class="btn" onclick="setRange(30)">1M</button>
+<button class="btn" onclick="setRange(90)">3M</button>
+<button class="btn" onclick="setRange(365)">1Y</button>
 </div>
 
-<div class="chart-box">
-  <canvas id="chart"></canvas>
+<div class="chart-container">
+<canvas id="chart"></canvas>
 </div>
 
-<div class="analysis" id="analysis"></div>
+<div class="analysis">
+<div class="section-title">Market Interpretation</div>
+<div id="analysisText"></div>
+</div>
+
+<div class="footer">
+ECB Data · Updated Daily (T-1 typical)
+</div>
 
 </div>
 
 <script>
 
-let range = 30;
+/* ================= STATE ================= */
+
 let chart;
+let range = 30;
 
-// ---------- ECB FETCH ----------
+/* ================= FETCH ================= */
 
-async function fetchECB() {
+async function fetchECB(){
 
 const url = "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=jsondata";
 
@@ -145,16 +202,87 @@ const obs = series.observations;
 const time = data.structure.dimensions.observation[0].values;
 
 const keys = Object.keys(obs).map(Number).sort((a,b)=>a-b);
-const slice = keys.slice(-range);
+const sliced = keys.slice(-range);
 
-return slice.map(k => ({
-  date: time[k].id,
-  value: obs[k][0]
+return sliced.map(k=>({
+date:time[k].id,
+value:obs[k][0]
 }));
 
 }
 
-// ---------- MAIN ----------
+/* ================= CHART ENGINE ================= */
+
+function createChart(ctx, data){
+
+const gradient = ctx.createLinearGradient(0,0,0,300);
+gradient.addColorStop(0,"rgba(91,227,125,0.3)");
+gradient.addColorStop(1,"rgba(91,227,125,0)");
+
+return new Chart(ctx,{
+type:"line",
+data:{
+labels:data.map(d=>d.date),
+datasets:[{
+data:data.map(d=>d.value),
+borderColor:"#5be37d",
+backgroundColor:gradient,
+fill:true,
+borderWidth:2,
+pointRadius:0,
+tension:0.25
+}]
+},
+options:{
+responsive:true,
+interaction:{
+mode:"index",
+intersect:false
+},
+plugins:{
+legend:{display:false},
+tooltip:{
+backgroundColor:"#0f2238",
+borderColor:"#5be37d",
+borderWidth:1
+}
+},
+scales:{
+x:{
+ticks:{display:false},
+grid:{display:false}
+},
+y:{
+ticks:{color:"#8fa6c0"},
+grid:{color:"rgba(255,255,255,0.04)"}
+}
+}
+}
+});
+
+}
+
+/* ================= ANALYSIS ENGINE ================= */
+
+function analyze(change, trend){
+
+if(change > 0 && trend > 0){
+return "Yields are rising with upward momentum, indicating tightening financial conditions and potential pressure on risk assets.";
+}
+
+if(change > 0){
+return "Yields increased today, reflecting short-term tightening in sovereign bond markets.";
+}
+
+if(change < 0 && trend < 0){
+return "Yields are declining with downward momentum, suggesting easing financial conditions.";
+}
+
+return "Yields are stable with limited directional momentum across recent sessions.";
+
+}
+
+/* ================= MAIN ================= */
 
 async function load(){
 
@@ -164,8 +292,9 @@ const latest = data[data.length-1];
 const prev = data[data.length-2];
 
 const change = latest.value - prev.value;
+const trend = latest.value - data[0].value;
 
-// ---------- METRICS ----------
+/* ===== METRICS ===== */
 
 document.getElementById("metrics").innerHTML = `
 <div class="metric">
@@ -175,7 +304,7 @@ document.getElementById("metrics").innerHTML = `
 
 <div class="metric">
 <div class="metric-label">Daily Change</div>
-<div class="metric-value" style="color:${change>0?'#5be37d':'#ff6b6b'}">
+<div class="metric-value ${change>0?"pos":"neg"}">
 ${change.toFixed(2)}
 </div>
 </div>
@@ -186,56 +315,34 @@ ${change.toFixed(2)}
 </div>
 `;
 
-// ---------- CHART ----------
+/* ===== CHART ===== */
 
 if(chart) chart.destroy();
 
-chart = new Chart(document.getElementById("chart"), {
-  type:"line",
-  data:{
-    labels:data.map(d=>d.date),
-    datasets:[{
-      data:data.map(d=>d.value),
-      borderColor:"#5be37d",
-      borderWidth:2,
-      pointRadius:0,
-      tension:0.3
-    }]
-  },
-  options:{
-    plugins:{legend:{display:false}},
-    scales:{
-      x:{display:false},
-      y:{ticks:{color:"#8fa6c0"}}
-    }
-  }
-});
+const ctx = document.getElementById("chart").getContext("2d");
+chart = createChart(ctx, data);
 
-// ---------- ANALYSIS ----------
+/* ===== ANALYSIS ===== */
 
-let text = "";
-
-if(change > 0){
-  text = "Euro area yields are rising, indicating tightening financial conditions.";
-}else{
-  text = "Euro area yields are easing, suggesting softer financial conditions.";
-}
-
-document.getElementById("analysis").innerText = text;
+document.getElementById("analysisText").innerText =
+analyze(change, trend);
 
 }
 
-// ---------- RANGE ----------
+/* ================= RANGE ================= */
 
 function setRange(r){
+
 range = r;
 
 document.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
 event.target.classList.add("active");
 
 load();
+
 }
 
+/* INIT */
 load();
 
 </script>
