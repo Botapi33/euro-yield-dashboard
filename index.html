@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>European Yield Curve Dashboard | BondStats</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+  background: radial-gradient(circle at top, #0b1a2b, #050d16);
+  color: #eef4fb;
+}
+
+.container {
+  max-width: 1300px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.card {
+  background: rgba(20,40,70,0.9);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.metric {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.label {
+  color: #9bb0c8;
+}
+
+.spread-positive { color: #5be37d; }
+.spread-negative { color: #ff6b6b; }
+
+.section {
+  margin-top: 40px;
+}
+
+.analysis {
+  background: rgba(255,255,255,0.03);
+  padding: 20px;
+  border-radius: 16px;
+  line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>European Yield Curve Dashboard</h1>
+<p>Real-time ECB-based yield curve and spread analysis</p>
+
+<div class="grid" id="topMetrics"></div>
+
+<div class="section">
+  <h2>Country Curve Analysis</h2>
+  <div class="grid" id="countries"></div>
+</div>
+
+<div class="section">
+  <h2>Fragmentation</h2>
+  <div class="grid" id="spreads"></div>
+</div>
+
+<div class="section">
+  <h2>Market Interpretation</h2>
+  <div class="analysis" id="analysis"></div>
+</div>
+
+</div>
+
+<script>
+
+async function loadData() {
+  const res = await fetch("https://botapi33.github.io/bondstats-global-yields/global_yields.json");
+  const data = await res.json();
+  return data.countries;
+}
+
+function createCard(title, value, extra="") {
+  return `
+    <div class="card">
+      <div class="label">${title}</div>
+      <div class="metric">${value}</div>
+      <div>${extra}</div>
+    </div>
+  `;
+}
+
+function analyze(curve, spreadIT) {
+  if (curve < 0) return "Yield curve is inverted → restrictive policy expectations.";
+  if (curve < 0.5) return "Curve is flat → transition phase.";
+  if (spreadIT > 1.5) return "High fragmentation risk in peripheral bonds.";
+  return "Stable bond market conditions.";
+}
+
+loadData().then(c => {
+
+  const germany = c.germany.value;
+  const italy = c.italy.value;
+  const france = c.france.value;
+  const spain = c.spain.value;
+
+  const euro = c.euro_area.value;
+
+  // MOCK 2Y (you will later add real 2Y series)
+  const euro2y = euro - 0.5;
+
+  const curve = euro - euro2y;
+
+  document.getElementById("topMetrics").innerHTML =
+    createCard("Euro 10Y", euro.toFixed(2) + "%") +
+    createCard("Euro 2Y", euro2y.toFixed(2) + "%") +
+    createCard("Curve (10Y-2Y)", curve.toFixed(2), curve < 0 ? "Inverted" : "Normal");
+
+  function countryCard(name, val) {
+    const spread = val - germany;
+    return createCard(name, val.toFixed(2) + "%",
+      "Spread vs DE: " + spread.toFixed(2));
+  }
+
+  document.getElementById("countries").innerHTML =
+    countryCard("Germany", germany) +
+    countryCard("France", france) +
+    countryCard("Italy", italy) +
+    countryCard("Spain", spain);
+
+  document.getElementById("spreads").innerHTML =
+    createCard("Italy vs Germany", (italy - germany).toFixed(2)) +
+    createCard("Spain vs Germany", (spain - germany).toFixed(2)) +
+    createCard("France vs Germany", (france - germany).toFixed(2));
+
+  document.getElementById("analysis").innerText =
+    analyze(curve, italy - germany);
+
+});
+
+</script>
+
+</body>
+</html>
