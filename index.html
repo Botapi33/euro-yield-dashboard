@@ -4,141 +4,138 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>BondStats | European Yield Intelligence</title>
+<title>BondStats | Euro Yield Monitor</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
   margin:0;
-  font-family: Inter, sans-serif;
-  background: linear-gradient(180deg,#07121f,#0b1b2f);
+  font-family:Inter,sans-serif;
+  background:#07121f;
   color:#eef4fb;
 }
 
-/* ---------- HEADER ---------- */
-
-.header {
-  padding:40px 60px;
+/* CONTAINER (EMBED READY) */
+.wrap {
+  max-width:900px;
+  margin:auto;
+  padding:25px;
 }
 
+/* HEADER */
 .title {
-  font-size:48px;
-  font-weight:700;
+  font-size:26px;
+  font-weight:600;
 }
 
 .subtitle {
-  color:#9bb0c8;
-  margin-top:10px;
+  color:#8fa6c0;
+  font-size:14px;
+  margin-top:4px;
 }
 
-/* ---------- GRID ---------- */
-
-.grid {
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
+/* METRICS */
+.metrics {
+  display:flex;
   gap:20px;
-  padding:20px 60px;
+  margin-top:20px;
 }
 
-.card {
-  background: rgba(20,40,70,0.9);
-  border-radius:20px;
-  padding:22px;
-  border:1px solid rgba(255,255,255,0.08);
+.metric {
+  flex:1;
+  background:#0f2238;
+  padding:15px;
+  border-radius:12px;
 }
 
-.label {
-  color:#9bb0c8;
-  font-size:13px;
+.metric-label {
+  font-size:12px;
+  color:#8fa6c0;
 }
 
-.value {
-  font-size:36px;
-  font-weight:700;
+.metric-value {
+  font-size:22px;
+  font-weight:600;
 }
 
-.pos {color:#5be37d;}
-.neg {color:#ff6b6b;}
-
-/* ---------- CHART ---------- */
-
-.chart-container {
-  padding:40px 60px;
-}
-
-.chart-box {
-  background: rgba(20,40,70,0.9);
-  padding:30px;
-  border-radius:20px;
-}
-
-/* ---------- BUTTONS ---------- */
-
-.time-buttons {
-  margin-bottom:20px;
+/* BUTTONS */
+.controls {
+  margin-top:20px;
 }
 
 .btn {
-  background:transparent;
   border:1px solid rgba(255,255,255,0.1);
-  color:#9bb0c8;
-  padding:8px 14px;
-  margin-right:10px;
-  border-radius:8px;
+  background:none;
+  color:#8fa6c0;
+  padding:6px 12px;
+  margin-right:6px;
+  border-radius:6px;
   cursor:pointer;
+  font-size:12px;
 }
 
 .btn.active {
-  border-color:#89b8ff;
+  border-color:#5be37d;
   color:#fff;
 }
 
-/* ---------- ANALYSIS ---------- */
+/* CHART */
+.chart-box {
+  margin-top:15px;
+  background:#0f2238;
+  padding:15px;
+  border-radius:12px;
+}
 
+canvas {
+  height:220px !important;
+}
+
+/* ANALYSIS */
 .analysis {
-  margin:40px 60px;
-  background:rgba(255,255,255,0.03);
-  padding:25px;
-  border-radius:16px;
-  line-height:1.6;
-  font-size:16px;
+  margin-top:20px;
+  font-size:13px;
+  color:#c6d4e5;
+  line-height:1.5;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="title">European Yield Intelligence</div>
-  <div class="subtitle">ECB Yield Curve, Spread & Market Signals</div>
+<div class="wrap">
+
+<div class="title">Euro 10Y Yield Monitor</div>
+<div class="subtitle">Daily sovereign yield tracking (ECB data)</div>
+
+<div class="metrics" id="metrics"></div>
+
+<div class="controls">
+  <button class="btn active" onclick="setRange(7)">1W</button>
+  <button class="btn" onclick="setRange(30)">1M</button>
+  <button class="btn" onclick="setRange(90)">3M</button>
+  <button class="btn" onclick="setRange(365)">1Y</button>
 </div>
 
-<div class="grid" id="metrics"></div>
-
-<div class="chart-container">
-  <div class="chart-box">
-    <div class="time-buttons">
-      <button class="btn active" onclick="setRange(30)">1M</button>
-      <button class="btn" onclick="setRange(90)">3M</button>
-      <button class="btn" onclick="setRange(365)">1Y</button>
-    </div>
-    <canvas id="chart"></canvas>
-  </div>
+<div class="chart-box">
+  <canvas id="chart"></canvas>
 </div>
 
 <div class="analysis" id="analysis"></div>
 
+</div>
+
 <script>
 
-let chart;
 let range = 30;
+let chart;
 
 // ---------- ECB FETCH ----------
 
-async function fetchECBSeries(code, maturity){
+async function fetchECB() {
 
-const url = `https://data-api.ecb.europa.eu/service/data/YC/B.${code}.EUR.4F.G_N_A.SV_C_YM.SR_${maturity}?format=jsondata`;
+const url = "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=jsondata";
 
 const res = await fetch(url);
 const data = await res.json();
@@ -148,77 +145,68 @@ const obs = series.observations;
 const time = data.structure.dimensions.observation[0].values;
 
 const keys = Object.keys(obs).map(Number).sort((a,b)=>a-b);
-
 const slice = keys.slice(-range);
 
 return slice.map(k => ({
   date: time[k].id,
   value: obs[k][0]
 }));
+
 }
 
-// ---------- LOAD ----------
+// ---------- MAIN ----------
 
 async function load(){
 
-const y10 = await fetchECBSeries("U2","10Y");
-const y2 = await fetchECBSeries("U2","2Y");
+const data = await fetchECB();
 
-const latest10 = y10[y10.length-1].value;
-const latest2 = y2[y2.length-1].value;
-const curve = latest10 - latest2;
+const latest = data[data.length-1];
+const prev = data[data.length-2];
+
+const change = latest.value - prev.value;
 
 // ---------- METRICS ----------
 
 document.getElementById("metrics").innerHTML = `
-<div class="card">
-<div class="label">Euro 10Y</div>
-<div class="value">${latest10.toFixed(2)}%</div>
+<div class="metric">
+<div class="metric-label">Current Yield</div>
+<div class="metric-value">${latest.value.toFixed(2)}%</div>
 </div>
 
-<div class="card">
-<div class="label">Euro 2Y</div>
-<div class="value">${latest2.toFixed(2)}%</div>
+<div class="metric">
+<div class="metric-label">Daily Change</div>
+<div class="metric-value" style="color:${change>0?'#5be37d':'#ff6b6b'}">
+${change.toFixed(2)}
+</div>
 </div>
 
-<div class="card">
-<div class="label">Curve</div>
-<div class="value ${curve<0?"neg":"pos"}">${curve.toFixed(2)}</div>
+<div class="metric">
+<div class="metric-label">Last Update</div>
+<div class="metric-value">${latest.date}</div>
 </div>
 `;
 
 // ---------- CHART ----------
-
-const labels = y10.map(d=>d.date);
 
 if(chart) chart.destroy();
 
 chart = new Chart(document.getElementById("chart"), {
   type:"line",
   data:{
-    labels:labels,
-    datasets:[
-      {
-        label:"10Y",
-        data:y10.map(d=>d.value),
-        borderWidth:2,
-        tension:0.3
-      },
-      {
-        label:"2Y",
-        data:y2.map(d=>d.value),
-        borderWidth:2,
-        tension:0.3
-      }
-    ]
+    labels:data.map(d=>d.date),
+    datasets:[{
+      data:data.map(d=>d.value),
+      borderColor:"#5be37d",
+      borderWidth:2,
+      pointRadius:0,
+      tension:0.3
+    }]
   },
   options:{
-    plugins:{
-      legend:{labels:{color:"#fff"}}
-    },
+    plugins:{legend:{display:false}},
     scales:{
-      x:{ticks:{color:"#9bb0c8"}},
-      y:{ticks:{color:"#9bb0c8"}}
+      x:{display:false},
+      y:{ticks:{color:"#8fa6c0"}}
     }
   }
 });
@@ -227,21 +215,17 @@ chart = new Chart(document.getElementById("chart"), {
 
 let text = "";
 
-if(curve < 0){
-text = "Yield curve inverted → restrictive policy, recession risk rising.";
-}
-else if(curve < 0.5){
-text = "Curve flat → transition phase in monetary policy.";
-}
-else{
-text = "Normal upward curve → stable macro environment.";
+if(change > 0){
+  text = "Euro area yields are rising, indicating tightening financial conditions.";
+}else{
+  text = "Euro area yields are easing, suggesting softer financial conditions.";
 }
 
 document.getElementById("analysis").innerText = text;
 
 }
 
-// ---------- RANGE SWITCH ----------
+// ---------- RANGE ----------
 
 function setRange(r){
 range = r;
