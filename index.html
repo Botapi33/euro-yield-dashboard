@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>BondStats | Euro Yield Intelligence</title>
+<title>BondStats | Euro Yield Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -19,28 +19,23 @@ background:linear-gradient(180deg,#050d16,#0a1a2b);
 color:#eef4fb;
 }
 
-/* ================= LAYOUT ================= */
+/* ================= CONTAINER ================= */
 
 .wrap{
-max-width:980px;
+max-width:900px;
 margin:auto;
-padding:30px 20px;
+padding:25px 16px;
 }
 
 /* ================= HEADER ================= */
 
-.header{
-margin-bottom:20px;
-}
-
 .title{
-font-size:28px;
+font-size:26px;
 font-weight:600;
-letter-spacing:0.3px;
 }
 
 .subtitle{
-font-size:13px;
+font-size:12px;
 color:#8fa6c0;
 margin-top:4px;
 }
@@ -50,32 +45,32 @@ margin-top:4px;
 .metrics{
 display:grid;
 grid-template-columns:repeat(3,1fr);
-gap:12px;
-margin-top:20px;
+gap:10px;
+margin-top:16px;
 }
 
 .metric{
 background:rgba(15,30,50,0.85);
-border:1px solid rgba(255,255,255,0.06);
-border-radius:12px;
-padding:14px;
+border:1px solid rgba(255,255,255,0.05);
+border-radius:10px;
+padding:12px;
 }
 
 .metric-label{
-font-size:11px;
+font-size:10px;
 color:#8fa6c0;
 text-transform:uppercase;
 }
 
 .metric-value{
-font-size:20px;
-margin-top:6px;
+font-size:18px;
+margin-top:4px;
 font-weight:600;
 }
 
 .metric-change{
 font-size:12px;
-margin-top:4px;
+margin-top:3px;
 }
 
 .pos{color:#5be37d;}
@@ -84,19 +79,19 @@ margin-top:4px;
 /* ================= CONTROLS ================= */
 
 .controls{
-margin-top:20px;
+margin-top:15px;
 display:flex;
-gap:8px;
+gap:6px;
 }
 
 .btn{
 border:1px solid rgba(255,255,255,0.08);
 background:none;
 color:#8fa6c0;
-padding:6px 12px;
+padding:5px 10px;
 border-radius:6px;
 cursor:pointer;
-font-size:12px;
+font-size:11px;
 }
 
 .btn.active{
@@ -106,42 +101,37 @@ color:#fff;
 
 /* ================= CHART ================= */
 
-.chart-container{
-margin-top:15px;
+.chart-box{
+margin-top:12px;
 background:rgba(15,30,50,0.9);
-border-radius:14px;
-padding:16px;
-border:1px solid rgba(255,255,255,0.06);
+border-radius:12px;
+padding:12px;
+border:1px solid rgba(255,255,255,0.05);
+height:220px;
 }
 
 canvas{
-height:240px !important;
+width:100% !important;
+height:100% !important;
 }
 
-/* ================= ANALYSIS ================= */
+/* ================= SIGNAL ================= */
 
-.analysis{
-margin-top:20px;
+.signal{
+margin-top:14px;
+padding:12px;
 background:rgba(255,255,255,0.03);
-padding:16px;
-border-radius:12px;
-font-size:13px;
-line-height:1.6;
-color:#c7d5e6;
-}
-
-.section-title{
+border-radius:10px;
 font-size:12px;
-text-transform:uppercase;
-color:#8fa6c0;
-margin-bottom:8px;
+line-height:1.5;
+color:#c7d5e6;
 }
 
 /* ================= FOOTER ================= */
 
 .footer{
-margin-top:15px;
-font-size:11px;
+margin-top:10px;
+font-size:10px;
 color:#6f859f;
 }
 
@@ -152,10 +142,8 @@ color:#6f859f;
 
 <div class="wrap">
 
-<div class="header">
-<div class="title">Euro 10Y Yield Intelligence</div>
-<div class="subtitle">Daily sovereign yield monitoring powered by ECB data</div>
-</div>
+<div class="title">Euro Yield Dashboard</div>
+<div class="subtitle">Daily ECB sovereign yield monitoring</div>
 
 <div class="metrics" id="metrics"></div>
 
@@ -166,17 +154,14 @@ color:#6f859f;
 <button class="btn" onclick="setRange(365)">1Y</button>
 </div>
 
-<div class="chart-container">
+<div class="chart-box">
 <canvas id="chart"></canvas>
 </div>
 
-<div class="analysis">
-<div class="section-title">Market Interpretation</div>
-<div id="analysisText"></div>
-</div>
+<div class="signal" id="signalText"></div>
 
 <div class="footer">
-ECB Data · Updated Daily (T-1 typical)
+ECB Data · Daily (T-1)
 </div>
 
 </div>
@@ -188,7 +173,7 @@ ECB Data · Updated Daily (T-1 typical)
 let chart;
 let range = 30;
 
-/* ================= FETCH ================= */
+/* ================= FETCH ECB ================= */
 
 async function fetchECB(){
 
@@ -211,12 +196,12 @@ value:obs[k][0]
 
 }
 
-/* ================= CHART ENGINE ================= */
+/* ================= CHART ================= */
 
-function createChart(ctx, data){
+function createChart(ctx,data){
 
-const gradient = ctx.createLinearGradient(0,0,0,300);
-gradient.addColorStop(0,"rgba(91,227,125,0.3)");
+const gradient = ctx.createLinearGradient(0,0,0,220);
+gradient.addColorStop(0,"rgba(91,227,125,0.35)");
 gradient.addColorStop(1,"rgba(91,227,125,0)");
 
 return new Chart(ctx,{
@@ -228,32 +213,23 @@ data:data.map(d=>d.value),
 borderColor:"#5be37d",
 backgroundColor:gradient,
 fill:true,
-borderWidth:2,
+borderWidth:1.8,
 pointRadius:0,
-tension:0.25
+tension:0.15
 }]
 },
 options:{
 responsive:true,
-interaction:{
-mode:"index",
-intersect:false
-},
 plugins:{
-legend:{display:false},
-tooltip:{
-backgroundColor:"#0f2238",
-borderColor:"#5be37d",
-borderWidth:1
-}
+legend:{display:false}
 },
 scales:{
-x:{
-ticks:{display:false},
-grid:{display:false}
-},
+x:{display:false},
 y:{
-ticks:{color:"#8fa6c0"},
+ticks:{
+color:"#8fa6c0",
+callback:v=>v.toFixed(2)+"%"
+},
 grid:{color:"rgba(255,255,255,0.04)"}
 }
 }
@@ -262,27 +238,31 @@ grid:{color:"rgba(255,255,255,0.04)"}
 
 }
 
-/* ================= ANALYSIS ENGINE ================= */
+/* ================= SIGNAL ENGINE ================= */
 
-function analyze(change, trend){
+function getSignal(change,trend){
 
 if(change > 0 && trend > 0){
-return "Yields are rising with upward momentum, indicating tightening financial conditions and potential pressure on risk assets.";
+return "↑ Rising yields with momentum. Financial conditions tightening.";
 }
 
 if(change > 0){
-return "Yields increased today, reflecting short-term tightening in sovereign bond markets.";
+return "↑ Short-term yield increase. Monitoring continuation risk.";
 }
 
 if(change < 0 && trend < 0){
-return "Yields are declining with downward momentum, suggesting easing financial conditions.";
+return "↓ Yields declining. Conditions easing across Euro area.";
 }
 
-return "Yields are stable with limited directional momentum across recent sessions.";
+if(change < 0){
+return "↓ Mild pullback in yields. No strong trend confirmation.";
+}
+
+return "→ Stable yield environment with low directional conviction.";
 
 }
 
-/* ================= MAIN ================= */
+/* ================= LOAD ================= */
 
 async function load(){
 
@@ -298,19 +278,19 @@ const trend = latest.value - data[0].value;
 
 document.getElementById("metrics").innerHTML = `
 <div class="metric">
-<div class="metric-label">Current Yield</div>
+<div class="metric-label">Yield</div>
 <div class="metric-value">${latest.value.toFixed(2)}%</div>
 </div>
 
 <div class="metric">
-<div class="metric-label">Daily Change</div>
+<div class="metric-label">Daily</div>
 <div class="metric-value ${change>0?"pos":"neg"}">
 ${change.toFixed(2)}
 </div>
 </div>
 
 <div class="metric">
-<div class="metric-label">Last Update</div>
+<div class="metric-label">Updated</div>
 <div class="metric-value">${latest.date}</div>
 </div>
 `;
@@ -318,14 +298,12 @@ ${change.toFixed(2)}
 /* ===== CHART ===== */
 
 if(chart) chart.destroy();
+chart = createChart(document.getElementById("chart").getContext("2d"),data);
 
-const ctx = document.getElementById("chart").getContext("2d");
-chart = createChart(ctx, data);
+/* ===== SIGNAL ===== */
 
-/* ===== ANALYSIS ===== */
-
-document.getElementById("analysisText").innerText =
-analyze(change, trend);
+document.getElementById("signalText").innerText =
+getSignal(change,trend);
 
 }
 
