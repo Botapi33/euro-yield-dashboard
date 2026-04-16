@@ -4,253 +4,255 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>European Yield Intelligence | BondStats</title>
+<title>BondStats | European Yield Intelligence</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
---bg1:#06111d;
---bg2:#0b1626;
---panel:rgba(12,24,40,0.95);
---border:rgba(138,170,215,0.18);
---text:#eef4fb;
---muted:#9bb0c8;
---green:#5be37d;
---red:#ff6b6b;
---accent:#89b8ff;
+body {
+  margin:0;
+  font-family: Inter, sans-serif;
+  background: linear-gradient(180deg,#07121f,#0b1b2f);
+  color:#eef4fb;
 }
 
-body{
-margin:0;
-font-family:Inter,sans-serif;
-background:linear-gradient(180deg,var(--bg1),var(--bg2));
-color:var(--text);
+/* ---------- HEADER ---------- */
+
+.header {
+  padding:40px 60px;
 }
 
-.wrap{
-max-width:1400px;
-margin:auto;
-padding:40px 20px;
+.title {
+  font-size:48px;
+  font-weight:700;
 }
 
-h1{
-font-size:48px;
-margin-bottom:10px;
+.subtitle {
+  color:#9bb0c8;
+  margin-top:10px;
 }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:20px;
+/* ---------- GRID ---------- */
+
+.grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  padding:20px 60px;
 }
 
-.card{
-background:var(--panel);
-border-radius:20px;
-padding:22px;
-border:1px solid var(--border);
-transition:.2s;
+.card {
+  background: rgba(20,40,70,0.9);
+  border-radius:20px;
+  padding:22px;
+  border:1px solid rgba(255,255,255,0.08);
 }
 
-.card:hover{
-transform:translateY(-3px);
-border-color:rgba(166,197,238,0.3);
+.label {
+  color:#9bb0c8;
+  font-size:13px;
 }
 
-.label{color:var(--muted);font-size:13px;}
-.value{font-size:34px;font-weight:700;margin-top:5px;}
-.sub{margin-top:8px;color:var(--muted);font-size:14px;}
+.value {
+  font-size:36px;
+  font-weight:700;
+}
 
-.pos{color:var(--green);}
-.neg{color:var(--red);}
+.pos {color:#5be37d;}
+.neg {color:#ff6b6b;}
 
-.section{margin-top:40px;}
+/* ---------- CHART ---------- */
 
-.analysis{
-background:rgba(255,255,255,0.03);
-padding:22px;
-border-radius:16px;
-line-height:1.7;
-font-size:17px;
+.chart-container {
+  padding:40px 60px;
+}
+
+.chart-box {
+  background: rgba(20,40,70,0.9);
+  padding:30px;
+  border-radius:20px;
+}
+
+/* ---------- BUTTONS ---------- */
+
+.time-buttons {
+  margin-bottom:20px;
+}
+
+.btn {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.1);
+  color:#9bb0c8;
+  padding:8px 14px;
+  margin-right:10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.btn.active {
+  border-color:#89b8ff;
+  color:#fff;
+}
+
+/* ---------- ANALYSIS ---------- */
+
+.analysis {
+  margin:40px 60px;
+  background:rgba(255,255,255,0.03);
+  padding:25px;
+  border-radius:16px;
+  line-height:1.6;
+  font-size:16px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
-
-<h1>European Yield Intelligence</h1>
-<p class="sub">Real-time ECB yield curve + sovereign spread system</p>
-
-<div class="section">
-<h2>Euro Area Curve</h2>
-<div class="grid" id="core"></div>
+<div class="header">
+  <div class="title">European Yield Intelligence</div>
+  <div class="subtitle">ECB Yield Curve, Spread & Market Signals</div>
 </div>
 
-<div class="section">
-<h2>Country Curve</h2>
-<div class="grid" id="countries"></div>
+<div class="grid" id="metrics"></div>
+
+<div class="chart-container">
+  <div class="chart-box">
+    <div class="time-buttons">
+      <button class="btn active" onclick="setRange(30)">1M</button>
+      <button class="btn" onclick="setRange(90)">3M</button>
+      <button class="btn" onclick="setRange(365)">1Y</button>
+    </div>
+    <canvas id="chart"></canvas>
+  </div>
 </div>
 
-<div class="section">
-<h2>Fragmentation</h2>
-<div class="grid" id="spreads"></div>
-</div>
-
-<div class="section">
-<h2>Market Interpretation</h2>
 <div class="analysis" id="analysis"></div>
-</div>
-
-</div>
 
 <script>
 
-// -------- CONFIG --------
+let chart;
+let range = 30;
 
-const JSON_URL = "https://botapi33.github.io/bondstats-global-yields/global_yields.json";
+// ---------- ECB FETCH ----------
 
-// -------- ECB FETCH --------
+async function fetchECBSeries(code, maturity){
 
-async function fetchECB(country, maturity){
-const url = `https://data-api.ecb.europa.eu/service/data/YC/B.${country}.EUR.4F.G_N_A.SV_C_YM.SR_${maturity}?format=jsondata`;
+const url = `https://data-api.ecb.europa.eu/service/data/YC/B.${code}.EUR.4F.G_N_A.SV_C_YM.SR_${maturity}?format=jsondata`;
 
 const res = await fetch(url);
 const data = await res.json();
 
 const series = Object.values(data.dataSets[0].series)[0];
 const obs = series.observations;
+const time = data.structure.dimensions.observation[0].values;
 
 const keys = Object.keys(obs).map(Number).sort((a,b)=>a-b);
 
-const latest = keys[keys.length-1];
-const prev = keys[keys.length-2];
+const slice = keys.slice(-range);
 
-const time = data.structure.dimensions.observation[0].values;
-
-return {
-date: time[latest].id,
-value: obs[latest][0],
-prev: obs[prev][0]
-};
+return slice.map(k => ({
+  date: time[k].id,
+  value: obs[k][0]
+}));
 }
 
-// -------- UI --------
+// ---------- LOAD ----------
 
-function card(title,value,sub="",cls=""){
-return `
+async function load(){
+
+const y10 = await fetchECBSeries("U2","10Y");
+const y2 = await fetchECBSeries("U2","2Y");
+
+const latest10 = y10[y10.length-1].value;
+const latest2 = y2[y2.length-1].value;
+const curve = latest10 - latest2;
+
+// ---------- METRICS ----------
+
+document.getElementById("metrics").innerHTML = `
 <div class="card">
-<div class="label">${title}</div>
-<div class="value ${cls}">${value}</div>
-<div class="sub">${sub}</div>
-</div>`;
-}
+<div class="label">Euro 10Y</div>
+<div class="value">${latest10.toFixed(2)}%</div>
+</div>
 
-// -------- SIGNALS --------
+<div class="card">
+<div class="label">Euro 2Y</div>
+<div class="value">${latest2.toFixed(2)}%</div>
+</div>
 
-function curveSignal(x){
-if(x < 0) return ["Inverted","neg"];
-if(x < 0.5) return ["Flat",""];
-return ["Normal","pos"];
-}
+<div class="card">
+<div class="label">Curve</div>
+<div class="value ${curve<0?"neg":"pos"}">${curve.toFixed(2)}</div>
+</div>
+`;
 
-function spreadSignal(x){
-if(x > 2) return ["High Risk","neg"];
-if(x > 1) return ["Moderate",""];
-return ["Low","pos"];
-}
+// ---------- CHART ----------
 
-// -------- MAIN --------
+const labels = y10.map(d=>d.date);
 
-async function run(){
+if(chart) chart.destroy();
 
-const json = await fetch(JSON_URL);
-const data = await json.json();
+chart = new Chart(document.getElementById("chart"), {
+  type:"line",
+  data:{
+    labels:labels,
+    datasets:[
+      {
+        label:"10Y",
+        data:y10.map(d=>d.value),
+        borderWidth:2,
+        tension:0.3
+      },
+      {
+        label:"2Y",
+        data:y2.map(d=>d.value),
+        borderWidth:2,
+        tension:0.3
+      }
+    ]
+  },
+  options:{
+    plugins:{
+      legend:{labels:{color:"#fff"}}
+    },
+    scales:{
+      x:{ticks:{color:"#9bb0c8"}},
+      y:{ticks:{color:"#9bb0c8"}}
+    }
+  }
+});
 
-const countries = data.countries;
-
-// ECB REAL DATA
-const euro10 = await fetchECB("U2","10Y");
-const euro2 = await fetchECB("U2","2Y");
-
-const de10 = await fetchECB("DE","10Y");
-const de2 = await fetchECB("DE","2Y");
-
-const fr10 = await fetchECB("FR","10Y");
-const fr2 = await fetchECB("FR","2Y");
-
-const it10 = await fetchECB("IT","10Y");
-const it2 = await fetchECB("IT","2Y");
-
-const es10 = await fetchECB("ES","10Y");
-const es2 = await fetchECB("ES","2Y");
-
-// ---- CORE ----
-
-const curve = euro10.value - euro2.value;
-const [curveTxt,curveCls] = curveSignal(curve);
-
-document.getElementById("core").innerHTML =
-card("Euro 10Y", euro10.value.toFixed(2)+"%") +
-card("Euro 2Y", euro2.value.toFixed(2)+"%") +
-card("Curve", curve.toFixed(2), curveTxt, curveCls);
-
-// ---- COUNTRIES ----
-
-function c(name,y10,y2){
-const sp = y10.value - y2.value;
-return card(name,
-y10.value.toFixed(2)+"%",
-"2Y: "+y2.value.toFixed(2)+" | Spread: "+sp.toFixed(2));
-}
-
-document.getElementById("countries").innerHTML =
-c("Germany",de10,de2)+
-c("France",fr10,fr2)+
-c("Italy",it10,it2)+
-c("Spain",es10,es2);
-
-// ---- SPREADS ----
-
-const itSpread = it10.value - de10.value;
-const frSpread = fr10.value - de10.value;
-const esSpread = es10.value - de10.value;
-
-function s(name,val){
-const [txt,cls] = spreadSignal(val);
-return card(name,val.toFixed(2)+"%",txt,cls);
-}
-
-document.getElementById("spreads").innerHTML =
-s("Italy vs Germany",itSpread)+
-s("France vs Germany",frSpread)+
-s("Spain vs Germany",esSpread);
-
-// ---- ANALYSIS ----
+// ---------- ANALYSIS ----------
 
 let text = "";
 
 if(curve < 0){
-text += "The euro area yield curve is inverted, signaling restrictive monetary conditions. ";
-}else if(curve < 0.5){
-text += "The curve remains flat, indicating a transition phase in monetary policy. ";
-}else{
-text += "The yield curve is upward sloping, reflecting stable macro conditions. ";
+text = "Yield curve inverted → restrictive policy, recession risk rising.";
 }
-
-if(itSpread > 2){
-text += "Peripheral spreads indicate elevated fragmentation risk.";
-}else if(itSpread > 1){
-text += "Moderate fragmentation persists across euro sovereigns.";
-}else{
-text += "Fragmentation remains contained.";
+else if(curve < 0.5){
+text = "Curve flat → transition phase in monetary policy.";
+}
+else{
+text = "Normal upward curve → stable macro environment.";
 }
 
 document.getElementById("analysis").innerText = text;
 
 }
 
-run();
+// ---------- RANGE SWITCH ----------
+
+function setRange(r){
+range = r;
+
+document.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
+event.target.classList.add("active");
+
+load();
+}
+
+load();
 
 </script>
 
