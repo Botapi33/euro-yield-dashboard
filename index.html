@@ -4,90 +4,73 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>European Yield Curve Intelligence | BondStats</title>
+<title>European Yield Intelligence | BondStats</title>
 
 <style>
-:root {
-  --bg:#050d16;
-  --panel:#0f2238;
-  --border:rgba(255,255,255,0.08);
-  --text:#eef4fb;
-  --muted:#9bb0c8;
-  --green:#5be37d;
-  --red:#ff6b6b;
-  --blue:#89b8ff;
+:root{
+--bg1:#06111d;
+--bg2:#0b1626;
+--panel:rgba(12,24,40,0.95);
+--border:rgba(138,170,215,0.18);
+--text:#eef4fb;
+--muted:#9bb0c8;
+--green:#5be37d;
+--red:#ff6b6b;
+--accent:#89b8ff;
 }
 
-body {
-  margin:0;
-  font-family:Inter, sans-serif;
-  background:radial-gradient(circle at top,#0b1a2b,#050d16);
-  color:var(--text);
+body{
+margin:0;
+font-family:Inter,sans-serif;
+background:linear-gradient(180deg,var(--bg1),var(--bg2));
+color:var(--text);
 }
 
-.wrap {
-  max-width:1400px;
-  margin:auto;
-  padding:40px 20px;
+.wrap{
+max-width:1400px;
+margin:auto;
+padding:40px 20px;
 }
 
-h1 {
-  font-size:48px;
-  margin-bottom:10px;
+h1{
+font-size:48px;
+margin-bottom:10px;
 }
 
-.section {
-  margin-top:40px;
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:20px;
 }
 
-.grid {
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:20px;
+.card{
+background:var(--panel);
+border-radius:20px;
+padding:22px;
+border:1px solid var(--border);
+transition:.2s;
 }
 
-.card {
-  background:var(--panel);
-  border-radius:20px;
-  padding:22px;
-  border:1px solid var(--border);
-  transition:.2s;
+.card:hover{
+transform:translateY(-3px);
+border-color:rgba(166,197,238,0.3);
 }
 
-.card:hover {
-  transform:translateY(-3px);
-  border-color:rgba(137,184,255,0.3);
-}
+.label{color:var(--muted);font-size:13px;}
+.value{font-size:34px;font-weight:700;margin-top:5px;}
+.sub{margin-top:8px;color:var(--muted);font-size:14px;}
 
-.label {
-  color:var(--muted);
-  font-size:13px;
-  margin-bottom:8px;
-}
+.pos{color:var(--green);}
+.neg{color:var(--red);}
 
-.value {
-  font-size:34px;
-  font-weight:700;
-}
+.section{margin-top:40px;}
 
-.sub {
-  margin-top:8px;
-  color:var(--muted);
-  font-size:14px;
-}
-
-.positive { color:var(--green); }
-.negative { color:var(--red); }
-
-.analysis {
-  background:rgba(255,255,255,0.03);
-  padding:22px;
-  border-radius:16px;
-  line-height:1.7;
-}
-
-.big {
-  font-size:18px;
+.analysis{
+background:rgba(255,255,255,0.03);
+padding:22px;
+border-radius:16px;
+line-height:1.7;
+font-size:17px;
 }
 </style>
 </head>
@@ -96,26 +79,26 @@ h1 {
 
 <div class="wrap">
 
-<h1>European Yield Curve Intelligence</h1>
-<p class="sub">ECB-based sovereign yield structure, curve signals and fragmentation analysis</p>
+<h1>European Yield Intelligence</h1>
+<p class="sub">Real-time ECB yield curve + sovereign spread system</p>
 
 <div class="section">
-<h2>Core Curve Metrics</h2>
+<h2>Euro Area Curve</h2>
 <div class="grid" id="core"></div>
 </div>
 
 <div class="section">
-<h2>Country Yield Structure</h2>
+<h2>Country Curve</h2>
 <div class="grid" id="countries"></div>
 </div>
 
 <div class="section">
-<h2>Fragmentation Engine</h2>
-<div class="grid" id="fragmentation"></div>
+<h2>Fragmentation</h2>
+<div class="grid" id="spreads"></div>
 </div>
 
 <div class="section">
-<h2>Market Interpretation Engine</h2>
+<h2>Market Interpretation</h2>
 <div class="analysis" id="analysis"></div>
 </div>
 
@@ -123,109 +106,151 @@ h1 {
 
 <script>
 
-const JSON_URL = "https://YOUR_JSON_URL/global_yields.json";
+// -------- CONFIG --------
 
-async function load() {
-  const res = await fetch(JSON_URL);
-  const data = await res.json();
-  return data.countries;
+const JSON_URL = "https://botapi33.github.io/bondstats-global-yields/global_yields.json";
+
+// -------- ECB FETCH --------
+
+async function fetchECB(country, maturity){
+const url = `https://data-api.ecb.europa.eu/service/data/YC/B.${country}.EUR.4F.G_N_A.SV_C_YM.SR_${maturity}?format=jsondata`;
+
+const res = await fetch(url);
+const data = await res.json();
+
+const series = Object.values(data.dataSets[0].series)[0];
+const obs = series.observations;
+
+const keys = Object.keys(obs).map(Number).sort((a,b)=>a-b);
+
+const latest = keys[keys.length-1];
+const prev = keys[keys.length-2];
+
+const time = data.structure.dimensions.observation[0].values;
+
+return {
+date: time[latest].id,
+value: obs[latest][0],
+prev: obs[prev][0]
+};
 }
 
-function card(title, value, sub="", cls="") {
-  return `
-  <div class="card">
-    <div class="label">${title}</div>
-    <div class="value ${cls}">${value}</div>
-    <div class="sub">${sub}</div>
-  </div>`;
+// -------- UI --------
+
+function card(title,value,sub="",cls=""){
+return `
+<div class="card">
+<div class="label">${title}</div>
+<div class="value ${cls}">${value}</div>
+<div class="sub">${sub}</div>
+</div>`;
 }
 
-// ---------- SIGNAL ENGINE ----------
+// -------- SIGNALS --------
 
-function curveSignal(spread){
-  if(spread < 0) return ["Inverted Curve","negative"];
-  if(spread < 0.5) return ["Flat Curve",""];
-  return ["Normal Curve","positive"];
+function curveSignal(x){
+if(x < 0) return ["Inverted","neg"];
+if(x < 0.5) return ["Flat",""];
+return ["Normal","pos"];
 }
 
-function fragmentationSignal(spread){
-  if(spread > 2) return ["High Fragmentation","negative"];
-  if(spread > 1) return ["Moderate Fragmentation",""];
-  return ["Low Fragmentation","positive"];
+function spreadSignal(x){
+if(x > 2) return ["High Risk","neg"];
+if(x > 1) return ["Moderate",""];
+return ["Low","pos"];
 }
 
-// ---------- MAIN ----------
+// -------- MAIN --------
 
-load().then(c => {
+async function run(){
 
-  const euro10 = c.euro_area.value;
+const json = await fetch(JSON_URL);
+const data = await json.json();
 
-  // Placeholder 2Y (replace later with real ECB 2Y)
-  const euro2 = euro10 - 0.6;
+const countries = data.countries;
 
-  const curve = euro10 - euro2;
+// ECB REAL DATA
+const euro10 = await fetchECB("U2","10Y");
+const euro2 = await fetchECB("U2","2Y");
 
-  const [curveText, curveClass] = curveSignal(curve);
+const de10 = await fetchECB("DE","10Y");
+const de2 = await fetchECB("DE","2Y");
 
-  document.getElementById("core").innerHTML =
-    card("Euro Area 10Y", euro10.toFixed(2)+"%") +
-    card("Euro Area 2Y", euro2.toFixed(2)+"%") +
-    card("Curve (10Y-2Y)", curve.toFixed(2), curveText, curveClass);
+const fr10 = await fetchECB("FR","10Y");
+const fr2 = await fetchECB("FR","2Y");
 
-  const germany = c.germany.value;
+const it10 = await fetchECB("IT","10Y");
+const it2 = await fetchECB("IT","2Y");
 
-  function country(name,val){
-    const spread = val - germany;
-    return card(
-      name,
-      val.toFixed(2)+"%",
-      "Spread vs DE: "+spread.toFixed(2)
-    );
-  }
+const es10 = await fetchECB("ES","10Y");
+const es2 = await fetchECB("ES","2Y");
 
-  document.getElementById("countries").innerHTML =
-    country("Germany",germany)+
-    country("France",c.france.value)+
-    country("Italy",c.italy.value)+
-    country("Spain",c.spain.value);
+// ---- CORE ----
 
-  const itSpread = c.italy.value - germany;
-  const spSpread = c.spain.value - germany;
-  const frSpread = c.france.value - germany;
+const curve = euro10.value - euro2.value;
+const [curveTxt,curveCls] = curveSignal(curve);
 
-  function spreadCard(name,val){
-    const [txt,cls] = fragmentationSignal(val);
-    return card(name,val.toFixed(2)+"%",txt,cls);
-  }
+document.getElementById("core").innerHTML =
+card("Euro 10Y", euro10.value.toFixed(2)+"%") +
+card("Euro 2Y", euro2.value.toFixed(2)+"%") +
+card("Curve", curve.toFixed(2), curveTxt, curveCls);
 
-  document.getElementById("fragmentation").innerHTML =
-    spreadCard("Italy vs Germany",itSpread)+
-    spreadCard("Spain vs Germany",spSpread)+
-    spreadCard("France vs Germany",frSpread);
+// ---- COUNTRIES ----
 
-  // ---------- INTERPRETATION ----------
+function c(name,y10,y2){
+const sp = y10.value - y2.value;
+return card(name,
+y10.value.toFixed(2)+"%",
+"2Y: "+y2.value.toFixed(2)+" | Spread: "+sp.toFixed(2));
+}
 
-  let text = "";
+document.getElementById("countries").innerHTML =
+c("Germany",de10,de2)+
+c("France",fr10,fr2)+
+c("Italy",it10,it2)+
+c("Spain",es10,es2);
 
-  if(curve < 0){
-    text += "The euro area yield curve is currently inverted, indicating restrictive monetary policy conditions and potential recession sensitivity. ";
-  } else if(curve < 0.5){
-    text += "The yield curve remains flat, suggesting a transition phase between tightening and stabilization. ";
-  } else {
-    text += "The yield curve is upward sloping, indicating relatively normal macro conditions. ";
-  }
+// ---- SPREADS ----
 
-  if(itSpread > 2){
-    text += "Peripheral spreads, particularly Italy, indicate elevated fragmentation risk within the euro area bond market.";
-  } else if(itSpread > 1){
-    text += "Moderate fragmentation is visible in peripheral sovereign spreads.";
-  } else {
-    text += "Fragmentation remains limited across euro area sovereign bonds.";
-  }
+const itSpread = it10.value - de10.value;
+const frSpread = fr10.value - de10.value;
+const esSpread = es10.value - de10.value;
 
-  document.getElementById("analysis").innerHTML = "<span class='big'>"+text+"</span>";
+function s(name,val){
+const [txt,cls] = spreadSignal(val);
+return card(name,val.toFixed(2)+"%",txt,cls);
+}
 
-});
+document.getElementById("spreads").innerHTML =
+s("Italy vs Germany",itSpread)+
+s("France vs Germany",frSpread)+
+s("Spain vs Germany",esSpread);
+
+// ---- ANALYSIS ----
+
+let text = "";
+
+if(curve < 0){
+text += "The euro area yield curve is inverted, signaling restrictive monetary conditions. ";
+}else if(curve < 0.5){
+text += "The curve remains flat, indicating a transition phase in monetary policy. ";
+}else{
+text += "The yield curve is upward sloping, reflecting stable macro conditions. ";
+}
+
+if(itSpread > 2){
+text += "Peripheral spreads indicate elevated fragmentation risk.";
+}else if(itSpread > 1){
+text += "Moderate fragmentation persists across euro sovereigns.";
+}else{
+text += "Fragmentation remains contained.";
+}
+
+document.getElementById("analysis").innerText = text;
+
+}
+
+run();
 
 </script>
 
