@@ -10,8 +10,6 @@
 
 <style>
 
-/* ===== BASE ===== */
-
 body{
 margin:0;
 font-family:Inter,system-ui;
@@ -25,8 +23,6 @@ margin:auto;
 padding:20px;
 }
 
-/* ===== HEADER ===== */
-
 .title{
 font-size:20px;
 font-weight:600;
@@ -37,8 +33,6 @@ font-size:12px;
 color:#7f96b2;
 margin-top:3px;
 }
-
-/* ===== METRICS ===== */
 
 .metrics{
 display:flex;
@@ -54,8 +48,6 @@ color:#fff;
 font-weight:500;
 }
 
-/* ===== CONTROLS ===== */
-
 .controls{
 margin-top:12px;
 }
@@ -67,7 +59,6 @@ color:#7f96b2;
 font-size:12px;
 margin-right:10px;
 cursor:pointer;
-padding:0;
 }
 
 .btn.active{
@@ -75,14 +66,10 @@ color:#fff;
 font-weight:500;
 }
 
-/* ===== CHART ===== */
-
 .chart-box{
 margin-top:10px;
 height:240px;
 }
-
-/* ===== SIGNAL ===== */
 
 .signal{
 margin-top:12px;
@@ -90,20 +77,17 @@ font-size:13px;
 color:#c6d4e5;
 }
 
-/* ===== FOOTER ===== */
-
 .footer{
 margin-top:10px;
 font-size:11px;
 color:#6f859f;
 }
 
-/* ===== ACTIONS ===== */
+/* ACTIONS */
 
 .actions{
 display:flex;
 gap:10px;
-flex-wrap:wrap;
 margin-top:14px;
 }
 
@@ -126,15 +110,8 @@ border-radius:10px;
 padding:10px;
 }
 
-.panel-label{
-font-size:11px;
-color:#8fa6bf;
-margin-bottom:8px;
-}
-
 .panel-area{
 width:100%;
-box-sizing:border-box;
 background:#06121f;
 color:#cfe3f5;
 border:1px solid rgba(255,255,255,0.08);
@@ -144,29 +121,23 @@ font-size:11px;
 resize:none;
 }
 
-.embed-area{
-height:84px;
-}
-
-.share-area{
-height:50px;
-}
+.embed-area{height:80px;}
+.share-area{height:50px;}
 
 .panel-actions{
+margin-top:8px;
 display:flex;
 gap:6px;
-margin-top:8px;
-flex-wrap:wrap;
 }
 
 .panel-actions button{
 background:none;
-border:1px solid rgba(255,255,255,0.10);
+border:1px solid rgba(255,255,255,0.1);
 color:#d7e4f3;
 padding:6px 10px;
-border-radius:8px;
-font-size:11px;
+border-radius:6px;
 cursor:pointer;
+font-size:11px;
 }
 
 </style>
@@ -198,24 +169,22 @@ cursor:pointer;
 ECB Data · Daily (T-1)
 </div>
 
-<div class="actions" id="actionsBar">
+<div class="actions">
 <button class="action-btn" onclick="toggleEmbed()">Embed Euro Yield Chart</button>
 <button class="action-btn" onclick="toggleShare()">Share this chart</button>
 </div>
 
 <div id="embedBox" class="panel">
-<div class="panel-label">Copy this code to embed the chart on your website</div>
 <textarea id="embedCode" class="panel-area embed-area" readonly></textarea>
 <div class="panel-actions">
-<button onclick="copyEmbed()">Copy embed code</button>
+<button onclick="copyEmbed()">Copy embed</button>
 </div>
 </div>
 
 <div id="shareBox" class="panel">
-<div class="panel-label">Share or copy this chart link</div>
 <textarea id="shareLink" class="panel-area share-area" readonly></textarea>
 <div class="panel-actions">
-<button onclick="copyLink()">Copy link</button>
+<button onclick="copyLink()">Copy</button>
 <button onclick="shareTwitter()">X</button>
 <button onclick="shareLinkedIn()">LinkedIn</button>
 </div>
@@ -228,12 +197,10 @@ ECB Data · Daily (T-1)
 let chart;
 let range = 30;
 
-/* ===== FETCH ECB ===== */
+/* FETCH ECB */
 
 async function fetchECB(){
-
 const url = "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=jsondata";
-
 const res = await fetch(url);
 const data = await res.json();
 
@@ -248,13 +215,11 @@ return sliced.map(k=>({
 date:time[k].id,
 value:obs[k][0]
 }));
-
 }
 
-/* ===== CHART ===== */
+/* CHART */
 
 function drawChart(data){
-
 if(chart) chart.destroy();
 
 chart = new Chart(document.getElementById("chart"),{
@@ -272,73 +237,28 @@ tension:0.15
 options:{
 responsive:true,
 maintainAspectRatio:false,
-
-interaction:{
-mode:"nearest",
-intersect:false
-},
-
-plugins:{
-legend:{display:false},
-tooltip:{
-backgroundColor:"#0b1f33",
-titleColor:"#fff",
-bodyColor:"#cfe3f5",
-displayColors:false,
-callbacks:{
-label:ctx=> ctx.raw.toFixed(2)+"%"
-}
-}
-},
-
+plugins:{legend:{display:false}},
 scales:{
-x:{
-ticks:{display:false},
-grid:{display:false}
-},
-y:{
-ticks:{
-color:"#7f96b2",
-callback:v=>v.toFixed(2)+"%"
-},
-grid:{
-color:"rgba(255,255,255,0.05)"
-}
-}
+x:{display:false},
+y:{ticks:{color:"#7f96b2"}}
 }
 }
 });
-
 }
 
-/* ===== SIGNAL ===== */
+/* SIGNAL */
 
 function signal(change,trend){
-
-if(change > 0 && trend > 0){
-return "Yields rising with momentum → tightening conditions";
+if(change>0&&trend>0)return "Yields rising → tightening";
+if(change>0)return "Short-term increase";
+if(change<0&&trend<0)return "Yields falling → easing";
+if(change<0)return "Mild pullback";
+return "Stable";
 }
 
-if(change > 0){
-return "Short-term increase in yields";
-}
-
-if(change < 0 && trend < 0){
-return "Yields declining → easing conditions";
-}
-
-if(change < 0){
-return "Mild pullback in yields";
-}
-
-return "Stable yield environment";
-
-}
-
-/* ===== LOAD ===== */
+/* LOAD */
 
 async function load(){
-
 const data = await fetchECB();
 
 const latest = data[data.length-1];
@@ -354,77 +274,66 @@ Updated: <b>${latest.date}</b>
 `;
 
 drawChart(data);
-
 document.getElementById("signal").innerText = signal(change,trend);
-
 }
 
-/* ===== RANGE ===== */
+/* RANGE */
 
 function setRange(r, ev){
-
 range = r;
-
 document.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
 ev.target.classList.add("active");
-
 load();
-
 }
 
-/* ===== EMBED ===== */
+/* EMBED FIXED */
 
 function toggleEmbed(){
 const box = document.getElementById("embedBox");
 const share = document.getElementById("shareBox");
 
-share.style.display = "none";
-box.style.display = box.style.display === "block" ? "none" : "block";
+share.style.display="none";
+box.style.display = box.style.display==="block"?"none":"block";
 
 document.getElementById("embedCode").value =
-`<iframe src="https://botapi33.github.io/euro-yield-dashboard/"
-width="100%"
-height="320"
-style="border:none;border-radius:10px;overflow:hidden;"
-loading="lazy">
-</iframe>`;
+`<iframe src="https://bondstats.org/euro-yield" width="100%" height="320" style="border:none;border-radius:10px;"></iframe>`;
 }
 
 function copyEmbed(){
-const el = document.getElementById("embedCode");
+const el=document.getElementById("embedCode");
 el.select();
-el.setSelectionRange(0, 99999);
 document.execCommand("copy");
 }
 
-/* ===== SHARE ===== */
+/* SHARE FIXED */
+
+const SHARE_URL = "https://bondstats.org/euro-yield";
 
 function toggleShare(){
-const box = document.getElementById("shareBox");
-const embed = document.getElementById("embedBox");
+const box=document.getElementById("shareBox");
+const embed=document.getElementById("embedBox");
 
-embed.style.display = "none";
-box.style.display = box.style.display === "block" ? "none" : "block";
+embed.style.display="none";
+box.style.display = box.style.display==="block"?"none":"block";
 
-document.getElementById("shareLink").value = window.location.href;
+document.getElementById("shareLink").value = SHARE_URL;
 }
 
 function copyLink(){
-const el = document.getElementById("shareLink");
+const el=document.getElementById("shareLink");
 el.select();
-el.setSelectionRange(0, 99999);
 document.execCommand("copy");
 }
 
 function shareTwitter(){
-const url = encodeURIComponent(window.location.href);
+const url = encodeURIComponent(SHARE_URL);
 const text = encodeURIComponent("Euro Area 10Y Yield – Live Chart");
-window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, "_blank");
+window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`,"_blank");
 }
 
 function shareLinkedIn(){
-const url = encodeURIComponent(window.location.href);
-window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, "_blank");
+const url = encodeURIComponent(SHARE_URL);
+window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`,"_blank");
 }
 
 load();
