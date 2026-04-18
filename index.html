@@ -197,10 +197,17 @@ ECB Data · Daily (T-1)
 let chart;
 let range = 30;
 
-/* FETCH ECB */
+/* ===== CONSTANTS ===== */
+
+const SHARE_URL = "https://www.bondstats.org/markets/daily-euro-bond-yield";
+const EMBED_URL = "https://botapi33.github.io/euro-yield-dashboard/";
+
+/* ===== FETCH ECB ===== */
 
 async function fetchECB(){
+
 const url = "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=jsondata";
+
 const res = await fetch(url);
 const data = await res.json();
 
@@ -215,11 +222,13 @@ return sliced.map(k=>({
 date:time[k].id,
 value:obs[k][0]
 }));
+
 }
 
-/* CHART */
+/* ===== CHART ===== */
 
 function drawChart(data){
+
 if(chart) chart.destroy();
 
 chart = new Chart(document.getElementById("chart"),{
@@ -244,9 +253,10 @@ y:{ticks:{color:"#7f96b2"}}
 }
 }
 });
+
 }
 
-/* SIGNAL */
+/* ===== SIGNAL ===== */
 
 function signal(change,trend){
 if(change>0&&trend>0)return "Yields rising → tightening";
@@ -256,9 +266,10 @@ if(change<0)return "Mild pullback";
 return "Stable";
 }
 
-/* LOAD */
+/* ===== LOAD ===== */
 
 async function load(){
+
 const data = await fetchECB();
 
 const latest = data[data.length-1];
@@ -275,9 +286,10 @@ Updated: <b>${latest.date}</b>
 
 drawChart(data);
 document.getElementById("signal").innerText = signal(change,trend);
+
 }
 
-/* RANGE */
+/* ===== RANGE ===== */
 
 function setRange(r, ev){
 range = r;
@@ -286,9 +298,10 @@ ev.target.classList.add("active");
 load();
 }
 
-/* EMBED FIXED */
+/* ===== EMBED ===== */
 
 function toggleEmbed(){
+
 const box = document.getElementById("embedBox");
 const share = document.getElementById("shareBox");
 
@@ -296,7 +309,7 @@ share.style.display="none";
 box.style.display = box.style.display==="block"?"none":"block";
 
 document.getElementById("embedCode").value =
-`<iframe src="https://bondstats.org/euro-yield" width="100%" height="320" style="border:none;border-radius:10px;"></iframe>`;
+`<iframe src="${EMBED_URL}" width="100%" height="320" style="border:none;border-radius:10px;"></iframe>`;
 }
 
 function copyEmbed(){
@@ -305,11 +318,10 @@ el.select();
 document.execCommand("copy");
 }
 
-/* SHARE FIXED */
-
-const SHARE_URL = "https://bondstats.org/euro-yield";
+/* ===== SHARE ===== */
 
 function toggleShare(){
+
 const box=document.getElementById("shareBox");
 const embed=document.getElementById("embedBox");
 
